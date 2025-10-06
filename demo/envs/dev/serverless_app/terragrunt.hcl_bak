@@ -1,0 +1,50 @@
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+  expose = true
+}
+
+terraform {
+  source = "../../../../terraform/modules/lambda"
+}
+
+dependency "iam" {
+  config_path = "../iam/"
+  mock_outputs = {
+        lambda_role_arn = "mock-lambda-role-arn"
+    }
+}
+
+dependency "dynamodb" {
+  config_path = "../dynamodb/"
+  mock_outputs = {
+        table_name = "mock-table-name"
+  }
+}
+
+locals {
+  app_name = include.root.locals.app_name
+  tags     = include.root.locals.tags
+  otel_layer_arn = include.root.locals.otel_layer_arn
+  aws_region   = include.root.locals.aws_region
+}
+
+inputs = {
+  function_name         = "${local.app_name}-primary-function"
+  lambda_role_arn       = dependency.iam.outputs.lambda_role_arn
+  handler               = "app.handler"
+  runtime               = "python3.12"
+  memory_size           = 256
+  timeout               = 10
+  source_dir            = "${get_repo_root()}/src"
+  output_path           = "${get_repo_root()}/src/lambda.zip"
+  tracing_mode          = "Active"
+  environment_variables = {
+    TABLE_NAME                         = dependency.dynamodb.outputs.table_name
+    AWS_LAMBDA_EXEC_WRAPPER            = "/opt/otel-instrument"
+    OPENTELEMETRY_COLLECTOR_CONFIG_URI = "/var/task/collector.yaml"
+    ## INJECT_LATENCY                     = "true"
+  }
+  layers = [local.otel_layer_arn]
+  tags   = local.tags
+  aws_region = local.aws_region
+}

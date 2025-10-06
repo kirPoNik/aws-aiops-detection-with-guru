@@ -1,0 +1,25 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  awsxray:
+  awsemf:
+    namespace: ${PROJECT_NAME}
+    log_group_name: ${LOG_GROUP_NAME}
+    log_stream_name: ${LOG_GROUP_NAME}-stream
+
+service:
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      exporters:
+        - awsxray
+    metrics:
+      receivers:
+        - otlp
+      exporters:
+        - awsemf

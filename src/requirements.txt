@@ -1,0 +1,17 @@
+# Application-specific dependencies
+aiohttp
+boto
+boto3
+requests
+
+# Core OpenTelemetry packages required for tracing
+#opentelemetry-api
+#opentelemetry-sdk
+
+# AWS Distro for OpenTelemetry - auto-configures the SDK for AWS X-Ray
+#opentelemetry-distro[aws]==0.41b0
+#opentelemetry-exporter-otlp==1.20.0
+
+# Auto-instrumentation for libraries used in the Lambda code
+#opentelemetry-instrumentation-boto3
+#opentelemetry-instrumentation-aiohttp-client
