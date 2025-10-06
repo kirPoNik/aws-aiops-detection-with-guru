@@ -143,3 +143,60 @@ cp -r demo/envs/dev demo/envs/prod
 #   - Set environment = "prod"
 #   - Set app_name = "aiops-demo-prod"
 ```
+
+
+### Project Structure 
+```bash
+.
+├── demo
+│   ├── envs
+│   │   └── dev
+│   │       ├── env.hcl
+│   │       ├── api_gateway
+│   │       │   └── terragrunt.hcl
+│   │       ├── devopsguru
+│   │       │   └── terragrunt.hcl
+│   │       ├── dynamodb
+│   │       │   └── terragrunt.hcl
+│   │       ├── iam
+│   │       │   └── terragrunt.hcl
+│   │       └── serverless_app
+│   │           └── terragrunt.hcl
+│   └── project.hcl
+├── root.hcl
+├── src
+│   ├── app.py
+│   ├── requirements.txt
+│   └── collector.yaml
+└── terraform
+    └── modules
+        ├── api_gateway
+        ├── devopsguru
+        ├── dynamodb
+        └── iam
+```
+
+#### Component Descriptions
+
+**Configuration Files:**
+- **[root.hcl](root.hcl)**: Root Terragrunt configuration that generates AWS provider blocks and configures S3 backend with environment-specific state isolation
+- **[demo/project.hcl](demo/project.hcl)**: Project-level configuration defining `app_name_prefix` and `project_name` used across all environments
+- **[demo/envs/dev/env.hcl](demo/envs/dev/env.hcl)**: Environment-specific configuration that sets the environment name (e.g., "dev")
+
+**Infrastructure Modules** ([terraform/modules/](terraform/modules/)):
+- **api_gateway/**: Creates an AWS API Gateway v2 (HTTP API) that triggers the Lambda function
+- **devopsguru/**: Configures AWS DevOps Guru for AIOps-based anomaly detection and resource collection
+- **dynamodb/**: Provisions a DynamoDB table used by the demo application
+- **iam/**: Defines IAM roles and policies required for Lambda execution and AWS service access
+
+**Environment Wiring** ([demo/envs/dev/](demo/envs/dev/)):
+- **api_gateway/**: Wires API Gateway to the Lambda function, depends on `serverless_app` module
+- **devopsguru/**: Sets up DevOps Guru monitoring for the application stack
+- **dynamodb/**: Creates the DynamoDB table instance for this environment
+- **iam/**: Defines Lambda execution role with necessary permissions
+- **serverless_app/**: Packages and deploys the Lambda function, depends on `iam` and `dynamodb` modules
+
+**Application Source** ([src/](src/)):
+- **[app.py](src/app.py)**: Lambda handler function with OpenTelemetry instrumentation and configurable latency injection (via `INJECT_LATENCY` env var)
+- **[requirements.txt](src/requirements.txt)**: Python dependencies including boto3, OpenTelemetry SDK, and AWS Lambda instrumentation
+- **[collector.yaml](src/collector.yaml)**: OpenTelemetry collector configuration for sending traces and metrics to AWS
